@@ -1,23 +1,17 @@
 from fastapi import FastAPI
 
+from app.api.upload import router as upload_router
+
 app = FastAPI(
-    title="MetricMind API",
-    description="Enterprise AI-Powered Semantic Business Intelligence Platform",
+    title="MetricMind X API",
     version="1.0.0"
 )
+
+app.include_router(upload_router)
 
 
 @app.get("/")
 def root():
     return {
-        "message": "Welcome to MetricMind 🚀",
-        "status": "Running",
-        "version": "1.0.0"
-    }
-
-
-@app.get("/health")
-def health_check():
-    return {
-        "status": "healthy"
+        "message": "Welcome to MetricMind X 🚀"
     }
