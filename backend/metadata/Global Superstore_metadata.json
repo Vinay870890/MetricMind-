@@ -1,0 +1,36 @@
+{
+    "dataset": "Global Superstore.csv",
+    "measures": [
+        "Discount",
+        "ji_lu-shu",
+        "Profit",
+        "Quantity",
+        "Row ID",
+        "Sales",
+        "Shipping Cost",
+        "Year",
+        "weeknum"
+    ],
+    "dimensions": [
+        "Category",
+        "City",
+        "Country",
+        "Customer ID",
+        "Customer Name",
+        "Market",
+        "Order Date",
+        "Order ID",
+        "Order Priority",
+        "Product ID",
+        "Product Name",
+        "Region",
+        "Segment",
+        "Ship Date",
+        "Ship Mode",
+        "State",
+        "Sub-Category",
+        "Market2"
+    ],
+    "total_measures": 9,
+    "total_dimensions": 18
+}
