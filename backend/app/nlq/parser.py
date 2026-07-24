@@ -6,11 +6,14 @@ def process_query(question: str, file_path: str):
     Process a natural language business question.
     """
 
-    metrics = calculate_metrics(file_path)
+    # Pass the question so filters can be extracted
+    metrics = calculate_metrics(file_path, question)
 
-    question = question.lower()
+    question_lower = question.lower()
 
     mapping = {
+        "profit margin": "profit_margin",
+
         "total sales": "total_sales",
         "sales": "total_sales",
 
@@ -31,15 +34,11 @@ def process_query(question: str, file_path: str):
 
         "products": "unique_products",
 
-        "discount": "total_discount",
-
-        "profit margin": "profit_margin"
+        "discount": "total_discount"
     }
 
     for keyword, metric in mapping.items():
-
-        if keyword in question:
-
+        if keyword in question_lower:
             return {
                 "question": question,
                 "metric": metric,
