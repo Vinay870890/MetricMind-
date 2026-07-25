@@ -5,7 +5,7 @@ from app.api.upload import router as upload_router
 from app.api.cleaning import router as cleaning_router
 from app.api.semantic import router as semantic_router
 from app.api.metrics import router as metrics_router
-
+from app.api.analytics import router as analytics_router
 
 app = FastAPI(
     title="MetricMind X API",
@@ -17,7 +17,7 @@ app.include_router(cleaning_router)
 app.include_router(semantic_router)
 app.include_router(metrics_router)
 app.include_router(query_router)
-
+app.include_router(analytics_router)
 
 @app.get("/")
 def root():
