@@ -10,10 +10,19 @@ def generate_chart(analysis: Dict) -> Dict:
     group_by = analysis["group_by"]
     records = analysis["records"]
 
+    if not records:
+        return {
+            "chart_type": "bar",
+            "title": "No Data",
+            "labels": [],
+            "values": [],
+            "insight": "No records found for the requested analysis."
+        }
+
     labels = []
     values = []
 
-    # Find the metric column (Sales, Profit, Quantity, etc.)
+    # Find the metric column (Sales, Profit, Quantity, Discount)
     value_column = None
 
     for key in records[0].keys():
@@ -33,9 +42,24 @@ def generate_chart(analysis: Dict) -> Dict:
     else:
         chart_type = "line"
 
+    # Business insight
+    highest_label = labels[0]
+    highest_value = values[0]
+
+    total = round(sum(values), 2)
+    average = round(total / len(values), 2)
+
+    insight = (
+        f"{highest_label} has the highest {metric} "
+        f"({highest_value:,.2f}). "
+        f"The average {metric} across {len(labels)} "
+        f"{group_by.lower()} values is {average:,.2f}."
+    )
+
     return {
         "chart_type": chart_type,
         "title": f"{metric.title()} by {group_by}",
         "labels": labels,
-        "values": values
+        "values": values,
+        "insight": insight
     }
