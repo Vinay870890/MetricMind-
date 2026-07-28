@@ -1,0 +1,45 @@
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException
+
+from app.graph.workflow import graph
+
+router = APIRouter(
+    prefix="/api",
+    tags=["LangGraph AI"]
+)
+
+
+@router.post("/langgraph")
+def run_langgraph(request: dict):
+    """
+    Execute the LangGraph AI workflow.
+    """
+
+    uploads_folder = Path("uploads")
+
+    csv_files = list(uploads_folder.glob("*.csv"))
+
+    if not csv_files:
+        raise HTTPException(
+            status_code=404,
+            detail="No dataset uploaded."
+        )
+
+    latest_file = max(
+        csv_files,
+        key=lambda file: file.stat().st_mtime
+    )
+
+    state = {
+        "question": request["question"],
+        "file_path": str(latest_file),
+        "plan": {},
+        "analysis": {},
+        "chart": {},
+        "response": {}
+    }
+
+    result = graph.invoke(state)
+
+    return result["response"]

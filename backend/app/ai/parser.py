@@ -7,8 +7,11 @@ def parse_question(question: str):
     into metric, group_by, and top.
     """
 
-    q = question.lower()
+    q = question.lower().strip()
 
+    # -------------------------
+    # Detect metric
+    # -------------------------
     metric = None
 
     if "sales" in q:
@@ -20,18 +23,40 @@ def parse_question(question: str):
     elif "discount" in q:
         metric = "discount"
 
+    # -------------------------
+    # Detect grouping column
+    # -------------------------
     group_by = None
 
     mapping = {
-        "category": "Category",
-        "sub-category": "Sub-Category",
-        "customer": "Customer Name",
+        # Customer
         "customer name": "Customer Name",
+        "customer": "Customer Name",
+
+        # Product
+        "product name": "Product Name",
         "product": "Product Name",
+
+        # Product hierarchy
+        "sub-category": "Sub-Category",
+        "subcategory": "Sub-Category",
+        "category": "Category",
+
+        # Geography
         "market": "Market",
-        "segment": "Segment",
+        "region": "Region",
         "country": "Country",
-        "city": "City"
+        "city": "City",
+        "state": "State",
+
+        # Business
+        "segment": "Segment",
+        "ship mode": "Ship Mode",
+        "shipmode": "Ship Mode",
+        "shipping": "Ship Mode",
+
+        # Order
+        "order priority": "Order Priority"
     }
 
     for key, value in mapping.items():
@@ -39,12 +64,28 @@ def parse_question(question: str):
             group_by = value
             break
 
+    # -------------------------
+    # Detect Top N
+    # -------------------------
     top = None
 
     match = re.search(r"top\s+(\d+)", q)
 
     if match:
         top = int(match.group(1))
+
+    # -------------------------
+    # Validation
+    # -------------------------
+    if metric is None:
+        raise ValueError(
+            "Could not identify a metric. Supported metrics: sales, profit, quantity, discount."
+        )
+
+    if group_by is None:
+        raise ValueError(
+            "Could not identify a grouping column from the question."
+        )
 
     return {
         "metric": metric,
