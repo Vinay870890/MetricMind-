@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from app.graph.workflow import graph
+from app.memory.session_memory import memory
 
 router = APIRouter(
     prefix="/api",
@@ -36,9 +37,15 @@ def run_langgraph(request: dict):
         "plan": {},
         "analysis": {},
         "chart": {},
-        "response": {}
+        "response": {},
+        "trace": []
     }
 
     result = graph.invoke(state)
+
+    memory.add(
+        request["question"],
+        result["response"]
+    )
 
     return result["response"]
