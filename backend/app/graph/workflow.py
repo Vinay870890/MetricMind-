@@ -8,6 +8,8 @@ from app.agents.visualization_agent import visualization_agent
 from app.agents.response_agent import response_agent
 from app.agents.insight_agent import insight_agent
 from app.agents.explanation_agent import explanation_agent
+from app.agents.router_agent import router_agent
+
 def planner_node(state: AgentState):
     """
     Planner Node:
@@ -58,19 +60,40 @@ def visualization_node(state: AgentState):
 def response_node(state: AgentState):
     """
     Response Node:
-    Build the final API response.
+    Build final API response based on executed route.
     """
 
-    state["trace"].append("Response Node")
+    state.setdefault("trace", [])
+
+    state["trace"].append(
+        "Response Node"
+    )
+
+    explanation = explanation_agent(
+        state.get("analysis"),
+        state.get("insight")
+    )
+
 
     state["response"] = response_agent(
-        state["question"],
-        state["chart"],
-        state["insight"]
+        question=state["question"],
+        route=state.get("route"),
+
+        analytics_result=state.get(
+            "analysis"
+        ),
+
+        insight=explanation,
+
+        chart=state.get(
+            "chart"
+        )
     )
+
 
     # Include execution trace
     state["response"]["trace"] = state["trace"]
+
 
     return state
 def insight_node(state: AgentState):
@@ -84,28 +107,27 @@ def insight_node(state: AgentState):
     state["trace"].append("Insight Node")
 
     return state
-def response_node(state: AgentState):
+
+def router_node(state: AgentState):
     """
-    Response Node:
-    Build the final API response.
+    Decide which workflow path should be executed.
     """
 
-    state["trace"].append("Response Node")
+    state.setdefault("trace", [])
 
-    explanation = explanation_agent(
-        state["analysis"],
-        state["insight"]
+    state["route"] = router_agent(state["plan"])
+
+    state["trace"].append(
+        f"Router Node → {state['route']}"
     )
-
-    state["response"] = response_agent(
-        state["question"],
-        state["chart"],
-        explanation
-    )
-
-    state["response"]["trace"] = state["trace"]
 
     return state
+def route_decision(state: AgentState):
+    """
+    Return the next node based on the selected route.
+    """
+
+    return state["route"]
 
 # -----------------------------
 # LangGraph Workflow
@@ -113,17 +135,39 @@ def response_node(state: AgentState):
 builder = StateGraph(AgentState)
 
 builder.add_node("planner", planner_node)
+builder.add_node("router", router_node)
 builder.add_node("analytics", analytics_node)
 builder.add_node("insight", insight_node)
 builder.add_node("visualization", visualization_node)
 builder.add_node("response", response_node)
-
 builder.set_entry_point("planner")
 
-builder.add_edge("planner", "analytics")
-builder.add_edge("analytics", "insight")
-builder.add_edge("insight", "visualization")
-builder.add_edge("visualization", "response")
+builder.add_edge("planner", "router")
+
+builder.add_conditional_edges(
+    "router",
+    route_decision,
+    {
+        "analytics": "analytics",
+        "insight": "analytics",
+        "visualization": "analytics",
+    }
+)
+builder.add_edge(
+    "analytics",
+    "insight"
+)
+
+builder.add_edge(
+    "insight",
+    "visualization"
+)
+
+builder.add_edge(
+    "visualization",
+    "response"
+)
+
 builder.add_edge("response", END)
 
 graph = builder.compile()

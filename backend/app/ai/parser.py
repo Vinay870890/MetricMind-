@@ -77,15 +77,18 @@ def parse_question(question: str):
     # -------------------------
     # Validation
     # -------------------------
-    if metric is None:
-        raise ValueError(
-            "Could not identify a metric. Supported metrics: sales, profit, quantity, discount."
-        )
-
     if group_by is None:
-        raise ValueError(
-            "Could not identify a grouping column from the question."
-        )
+        if any(word in q for word in [
+            "total",
+            "overall",
+            "summary",
+            "average"
+        ]):
+            group_by = "Category"
+        else:
+            raise ValueError(
+                "Could not identify a grouping column from the question."
+            )
 
     return {
         "metric": metric,

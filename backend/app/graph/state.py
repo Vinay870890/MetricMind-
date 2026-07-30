@@ -1,18 +1,32 @@
 from typing import TypedDict
 
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     """
-    Shared state used across the LangGraph workflow.
+    Shared state passed between LangGraph nodes.
     """
 
+    # User input
     question: str
     file_path: str
 
+    # Planner output
     plan: dict
+
+    # Workflow routing
+    route: str
+
+    # Analytics output
     analysis: dict
+
+    # Insight output
+    insight: dict
+
+    # Visualization output
     chart: dict
-    insight: str
+
+    # Final response
     response: dict
 
+    # Execution trace
     trace: list[str]
