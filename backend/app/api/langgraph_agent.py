@@ -37,6 +37,7 @@ def run_langgraph(request: dict):
         "plan": {},
         "analysis": {},
         "chart": {},
+        "insight": "",
         "response": {},
         "trace": []
     }

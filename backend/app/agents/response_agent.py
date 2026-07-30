@@ -1,26 +1,27 @@
-from app.memory.session_memory import memory
+from datetime import datetime
 
 
-def response_agent(question: str, chart: dict):
+def response_agent(
+    question: str,
+    chart: dict,
+    insight: str
+):
     """
-    Generate the final AI response with conversation context.
+    Build the final AI report.
     """
 
-    previous_question = None
-
-    if len(memory.history) > 0:
-        previous_question = memory.history[-1]["question"]
-
-    response = {
+    return {
         "status": "success",
         "question": question,
-        "chart": chart,
-        "insight": chart.get("insight", "")
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+
+        "executive_summary": insight,
+
+        "visualization": chart,
+
+        "metadata": {
+            "engine": "MetricMind X",
+            "workflow": "LangGraph",
+            "version": "1.0"
+        }
     }
-
-    if previous_question:
-        response["context"] = (
-            f"Previous analysis: '{previous_question}'"
-        )
-
-    return response
