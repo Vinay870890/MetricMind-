@@ -1,16 +1,20 @@
 from app.ai.parser import parse_question
-from app.agents.router_agent import router_agent
+from app.semantic.context import build_semantic_context
 
 
 def planner_agent(question: str):
     """
-    Understand the user's request, create an execution plan,
-    and determine which workflow route should be executed.
+    Planner Agent
+
+    Uses the Semantic Layer to understand
+    the user's analytics request.
     """
+
+    semantic_context = build_semantic_context()
 
     plan = parse_question(question)
 
-    # Decide workflow route
-    plan["route"] = router_agent(plan)
+    plan["semantic_context"] = semantic_context
 
+    
     return plan

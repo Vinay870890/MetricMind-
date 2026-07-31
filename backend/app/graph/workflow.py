@@ -9,7 +9,7 @@ from app.agents.response_agent import response_agent
 from app.agents.insight_agent import insight_agent
 from app.agents.explanation_agent import explanation_agent
 from app.agents.router_agent import router_agent
-
+from app.agents.validator_agent import validator_agent
 def planner_node(state: AgentState):
     """
     Planner Node:
@@ -27,10 +27,6 @@ def planner_node(state: AgentState):
 
 
 def analytics_node(state: AgentState):
-    """
-    Analytics Node:
-    Execute the business analysis.
-    """
 
     state["trace"].append("Analytics Node")
 
@@ -38,6 +34,11 @@ def analytics_node(state: AgentState):
         state["file_path"],
         state["plan"]
     )
+
+    print("\n===== ANALYSIS DEBUG =====")
+    print(type(state["analysis"]))
+    print(state["analysis"])
+    print("==========================\n")
 
     return state
 
@@ -100,6 +101,7 @@ def insight_node(state: AgentState):
 
     state.setdefault("trace", [])
 
+    
     state["insight"] = insight_agent(
         state["analysis"]
     )
@@ -128,6 +130,30 @@ def route_decision(state: AgentState):
     """
 
     return state["route"]
+def validator_node(state: AgentState):
+    """
+    Semantic Validator Node:
+    Ensures planner uses only governed metrics.
+    """
+
+    state.setdefault("trace", [])
+
+    state["trace"].append(
+        "Semantic Validator Node"
+    )
+
+    validation = validator_agent(
+        state["plan"]
+    )
+
+    state["validation"] = validation
+
+
+    if not validation["valid"]:
+        state["error"] = validation["error"]
+
+
+    return state
 
 # -----------------------------
 # LangGraph Workflow
@@ -135,6 +161,7 @@ def route_decision(state: AgentState):
 builder = StateGraph(AgentState)
 
 builder.add_node("planner", planner_node)
+builder.add_node("validator", validator_node)
 builder.add_node("router", router_node)
 builder.add_node("analytics", analytics_node)
 builder.add_node("insight", insight_node)
@@ -142,7 +169,15 @@ builder.add_node("visualization", visualization_node)
 builder.add_node("response", response_node)
 builder.set_entry_point("planner")
 
-builder.add_edge("planner", "router")
+builder.add_edge(
+    "planner",
+    "validator"
+)
+
+builder.add_edge(
+    "validator",
+    "router"
+)
 
 builder.add_conditional_edges(
     "router",
