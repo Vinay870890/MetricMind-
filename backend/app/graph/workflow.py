@@ -49,11 +49,22 @@ def visualization_node(state: AgentState):
     Convert analytics into chart-ready data.
     """
 
-    state["trace"].append("Visualization Node")
+    state.setdefault("trace", [])
+
+    print("\n===== BEFORE VISUALIZATION =====")
+    print(state["analysis"])
+    print("===============================")
 
     state["chart"] = visualization_agent(
-        state["analysis"]
-    )
+        state["analysis"],
+        state["plan"]
+)
+
+    print("\n===== GENERATED CHART =====")
+    print(state["chart"])
+    print("===========================")
+
+    state["trace"].append("Visualization Node")
 
     return state
 
@@ -101,15 +112,22 @@ def insight_node(state: AgentState):
 
     state.setdefault("trace", [])
 
-    
+    print("\n===== BEFORE INSIGHT =====")
+    print(type(state["analysis"]))
+    print(state["analysis"])
+    print("==========================")
+
     state["insight"] = insight_agent(
         state["analysis"]
     )
 
+    print("\n===== GENERATED INSIGHT =====")
+    print(state["insight"])
+    print("============================")
+
     state["trace"].append("Insight Node")
 
     return state
-
 def router_node(state: AgentState):
     """
     Decide which workflow path should be executed.

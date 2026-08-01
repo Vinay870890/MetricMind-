@@ -1,6 +1,6 @@
 from app.ai.parser import parse_question
 from app.semantic.context import build_semantic_context
-
+from app.semantic.normalizer import normalize_metric
 
 def planner_agent(question: str):
     """
@@ -14,7 +14,12 @@ def planner_agent(question: str):
 
     plan = parse_question(question)
 
-    plan["semantic_context"] = semantic_context
+    plan["metric"] = normalize_metric(
+        plan.get("metric")
+)
 
+    plan["semantic_context"] = semantic_context
     
     return plan
+
+

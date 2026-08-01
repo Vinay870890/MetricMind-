@@ -2,6 +2,22 @@ import re
 
 from app.semantic.registry import registry
 
+# Metric synonyms
+METRIC_SYNONYMS = {
+    "sales": "sales",
+    "sale": "sales",
+    "revenue": "sales",
+
+    "profit": "profit",
+    "profits": "profit",
+
+    "discount": "discount",
+    "discounts": "discount",
+
+    "quantity": "quantity",
+    "qty": "quantity",
+}
+
 
 def parse_question(question: str):
     """
@@ -12,17 +28,13 @@ def parse_question(question: str):
 
     metric = None
 
-    # ----------------------------
     # Metric Detection
-    # ----------------------------
-    for metric_name in registry.keys():
-        if metric_name in q:
-            metric = metric_name
+    for keyword, normalized_metric in METRIC_SYNONYMS.items():
+        if keyword in q:
+            metric = normalized_metric
             break
 
-    # ----------------------------
     # Dimension Detection
-    # ----------------------------
     mapping = {
         "category": "Category",
         "sub-category": "Sub-Category",
@@ -35,7 +47,7 @@ def parse_question(question: str):
         "city": "City",
         "region": "Region",
         "ship mode": "Ship Mode",
-        "state": "State"
+        "state": "State",
     }
 
     group_by = None
@@ -45,9 +57,7 @@ def parse_question(question: str):
             group_by = column
             break
 
-    # ----------------------------
     # Top N Detection
-    # ----------------------------
     top = None
 
     match = re.search(r"top\s+(\d+)", q)
@@ -58,5 +68,5 @@ def parse_question(question: str):
     return {
         "metric": metric,
         "group_by": group_by,
-        "top": top
+        "top": top,
     }
