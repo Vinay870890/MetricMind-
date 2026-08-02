@@ -1,22 +1,19 @@
-from app.charts.generator import generate_chart
 from app.visualization.recommender import recommend_chart
+from app.charts.generator import generate_chart
+from app.dashboard.builder import build_dashboard
 
-
-def visualization_agent(
-    analysis: dict,
-    plan: dict
-):
+def visualization_agent(plan: dict, analysis: dict):
     """
-    Convert analytics into intelligent visualization.
+    Generate an intelligent visualization specification.
     """
 
-    chart_type = recommend_chart(
-        plan,
-        analysis
+    chart_type = recommend_chart(plan, analysis)
+
+    chart = generate_chart(
+        analysis,
+        chart_type
     )
+    dashboard = build_dashboard(chart)
 
-    chart = generate_chart(analysis)
-
-    chart["chart_type"] = chart_type
-
-    return chart
+    return dashboard
+    

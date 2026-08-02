@@ -10,6 +10,8 @@ from app.agents.insight_agent import insight_agent
 from app.agents.explanation_agent import explanation_agent
 from app.agents.router_agent import router_agent
 from app.agents.validator_agent import validator_agent
+from app.memory.conversation import memory
+
 def planner_node(state: AgentState):
     """
     Planner Node:
@@ -22,7 +24,13 @@ def planner_node(state: AgentState):
     state["plan"] = planner_agent(
         state["question"]
     )
-
+    memory.save(
+    state["question"],
+    state["plan"]
+    )
+    print("\n===== MEMORY SAVED =====")
+    print(memory.load())
+    print("========================\n")
     return state
 
 
@@ -52,13 +60,14 @@ def visualization_node(state: AgentState):
     state.setdefault("trace", [])
 
     print("\n===== BEFORE VISUALIZATION =====")
+    print(state["plan"])
     print(state["analysis"])
     print("===============================")
 
     state["chart"] = visualization_agent(
-        state["analysis"],
-        state["plan"]
-)
+        state["plan"],
+        state["analysis"]
+    )
 
     print("\n===== GENERATED CHART =====")
     print(state["chart"])
@@ -68,11 +77,10 @@ def visualization_node(state: AgentState):
 
     return state
 
-
 def response_node(state: AgentState):
     """
     Response Node:
-    Build final API response based on executed route.
+    Build final API response.
     """
 
     state.setdefault("trace", [])
@@ -86,26 +94,15 @@ def response_node(state: AgentState):
         state.get("insight")
     )
 
-
     state["response"] = response_agent(
         question=state["question"],
         route=state.get("route"),
-
-        analytics_result=state.get(
-            "analysis"
-        ),
-
+        analytics_result=state.get("analysis"),
         insight=explanation,
-
-        chart=state.get(
-            "chart"
-        )
+        chart=state.get("chart")
     )
 
-
-    # Include execution trace
     state["response"]["trace"] = state["trace"]
-
 
     return state
 def insight_node(state: AgentState):

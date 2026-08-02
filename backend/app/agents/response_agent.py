@@ -26,8 +26,9 @@ def response_agent(
         }
     }
 
-
-    # Analytics-only workflow
+    # ----------------------------
+    # Analytics workflow
+    # ----------------------------
     if route == "analytics":
 
         response["analytics_result"] = analytics_result
@@ -36,29 +37,39 @@ def response_agent(
             "Analytics calculation completed successfully."
         )
 
-
-    # Insight-only workflow
+    # ----------------------------
+    # Insight workflow
+    # ----------------------------
     elif route == "insight":
 
         response["executive_summary"] = insight
 
-
+    # ----------------------------
     # Visualization workflow
+    # ----------------------------
     elif route == "visualization":
 
-        response["executive_summary"] = (
-            "Visualization generated successfully."
-        )
+        response["dashboard"] = chart
 
-        response["visualization"] = chart
+        if insight:
+            response["executive_summary"] = (
+                "Business Analysis Completed.\n\n"
+                f"{insight}\n\n"
+                f"Recommended Visualization: "
+                f"{chart.get('chart_type', 'bar')} chart."
+            )
+        else:
+            response["executive_summary"] = (
+                "Visualization generated successfully."
+            )
 
-
+    # ----------------------------
     # Safety fallback
+    # ----------------------------
     else:
 
         response["executive_summary"] = (
             "Unable to determine workflow output."
         )
-
 
     return response
