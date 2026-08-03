@@ -1,7 +1,6 @@
 from app.ai.parser import parse_question
-from app.semantic.context import build_semantic_context
-from app.semantic.normalizer import normalize_metric
 from app.memory.conversation import memory
+
 
 def planner_agent(question: str):
     """
@@ -22,5 +21,8 @@ def planner_agent(question: str):
 
         if plan["top"] is None:
             plan["top"] = previous.get("top")
+
+    # Save latest plan
+    memory.save(question, plan)
 
     return plan

@@ -52,13 +52,27 @@ def response_agent(
         response["dashboard"] = chart
 
         if insight:
+            chart_type = "bar"
+
+            if chart:
+                widgets = chart.get("widgets", [])
+
+                if widgets:
+                    chart_type = (
+                        widgets[0]
+                        .get("config", {})
+                        .get("chart_type", "bar")
+                    )
+
             response["executive_summary"] = (
                 "Business Analysis Completed.\n\n"
                 f"{insight}\n\n"
                 f"Recommended Visualization: "
-                f"{chart.get('chart_type', 'bar')} chart."
+                f"{chart_type} chart."
             )
+
         else:
+
             response["executive_summary"] = (
                 "Visualization generated successfully."
             )
