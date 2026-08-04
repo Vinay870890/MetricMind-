@@ -1,16 +1,54 @@
-def build_dashboard(chart: dict):
+from app.dashboard.widgets import build_kpi_cards
+
+
+def build_dashboard(chart: dict, analysis: dict):
     """
-    Build a dashboard specification from chart metadata.
+    Build a complete dashboard specification.
     """
 
     return {
-        "layout": "single",
-        "theme": "light",
+        "dashboard_id": "metricmind_dashboard",
         "title": "MetricMind Dashboard",
-        "widgets": [
+        "description": "AI-generated business dashboard",
+        "theme": "light",
+
+        "layout": {
+            "type": "single_column",
+            "responsive": True
+        },
+
+        "filters": [
             {
-                "type": "chart",
-                "config": chart
+                "name": "Date",
+                "type": "date_range"
+            },
+            {
+                "name": "Region",
+                "type": "dropdown"
+            },
+            {
+                "name": "Category",
+                "type": "dropdown"
             }
-        ]
+        ],
+
+        "widgets": (
+            build_kpi_cards(analysis)
+            + [
+                {
+                    "id": "chart_1",
+                    "type": "chart",
+                    "width": 12,
+                    "height": 6,
+                    "config": chart
+                }
+            ]
+        ),
+
+        "analysis": analysis,
+
+        "metadata": {
+            "generated_by": "MetricMind X",
+            "version": "1.0"
+        }
     }

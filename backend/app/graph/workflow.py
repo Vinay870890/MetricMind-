@@ -54,24 +54,24 @@ def analytics_node(state: AgentState):
 def visualization_node(state: AgentState):
     """
     Visualization Node:
-    Convert analytics into chart-ready data.
+    Convert analytics into dashboard-ready data.
     """
 
     state.setdefault("trace", [])
 
     print("\n===== BEFORE VISUALIZATION =====")
-    print(state["plan"])
     print(state["analysis"])
     print("===============================")
 
+    # Correct argument order
     state["chart"] = visualization_agent(
         state["plan"],
         state["analysis"]
     )
 
-    print("\n===== GENERATED CHART =====")
+    print("\n===== GENERATED DASHBOARD =====")
     print(state["chart"])
-    print("===========================")
+    print("==============================")
 
     state["trace"].append("Visualization Node")
 

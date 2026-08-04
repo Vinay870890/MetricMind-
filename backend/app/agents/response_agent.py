@@ -57,12 +57,17 @@ def response_agent(
             if chart:
                 widgets = chart.get("widgets", [])
 
-                if widgets:
-                    chart_type = (
-                        widgets[0]
-                        .get("config", {})
-                        .get("chart_type", "bar")
-                    )
+                for widget in widgets:
+
+                    if widget.get("type") == "chart":
+
+                        chart_type = (
+                            widget
+                            .get("config", {})
+                            .get("chart_type", "bar")
+                        )
+
+                        break
 
             response["executive_summary"] = (
                 "Business Analysis Completed.\n\n"
