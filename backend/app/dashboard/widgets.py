@@ -32,6 +32,8 @@ def build_kpi_cards(analysis: dict):
         {
             "id": "kpi_total",
             "type": "kpi",
+            "width": 3,
+            "height": 1,
             "title": f"Total {metric.title()}",
             "value": round(total, 2)
         },
