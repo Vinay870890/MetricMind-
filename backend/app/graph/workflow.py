@@ -5,11 +5,13 @@ from app.graph.state import AgentState
 from app.agents.planner import planner_agent
 from app.agents.analytics_agent import analytics_agent
 from app.agents.visualization_agent import visualization_agent
+from app.dashboard.storage import save_dashboard
 from app.agents.response_agent import response_agent
 from app.agents.insight_agent import insight_agent
 from app.agents.explanation_agent import explanation_agent
 from app.agents.router_agent import router_agent
 from app.agents.validator_agent import validator_agent
+
 from app.memory.conversation import memory
 
 def planner_node(state: AgentState):
@@ -94,6 +96,23 @@ def response_node(state: AgentState):
         state.get("insight")
     )
 
+    # --------------------------------
+    # Automatically save dashboard
+    # --------------------------------
+    saved_dashboard = None
+
+    if (
+        state.get("route") == "visualization"
+        and state.get("chart")
+    ):
+        saved_dashboard = save_dashboard(
+            state["question"],
+            state["chart"]
+        )
+
+    # --------------------------------
+    # Build API response
+    # --------------------------------
     state["response"] = response_agent(
         question=state["question"],
         route=state.get("route"),
@@ -101,6 +120,13 @@ def response_node(state: AgentState):
         insight=explanation,
         chart=state.get("chart")
     )
+
+    # Include saved dashboard info
+    if saved_dashboard:
+        state["response"]["saved_dashboard"] = {
+            "id": saved_dashboard["id"],
+            "name": saved_dashboard["name"]
+        }
 
     state["response"]["trace"] = state["trace"]
 
