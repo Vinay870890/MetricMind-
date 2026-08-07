@@ -1,5 +1,4 @@
 [
-    
     {
         "id": "42ca3016-a738-400a-8030-8061718cf7d1",
         "name": "Sales by Region",
@@ -371,6 +370,201 @@
                 "generated_at": "2026-08-06T22:06:02.269338",
                 "dashboard_type": "business_dashboard"
             }
+        }
+    },
+    {
+        "id": "aef848b0-c464-460a-aa66-2680d7f8dd32",
+        "name": "sales by region",
+        "created_at": "2026-08-08T01:08:49.648538",
+        "dashboard": {
+            "dashboard_id": "e5c11377-bf7a-4766-ab14-170aa0a1ca4a",
+            "title": "MetricMind Dashboard",
+            "description": "AI-generated business dashboard",
+            "theme": "light",
+            "layout": {
+                "type": "grid",
+                "columns": 12,
+                "responsive": true,
+                "gap": 16
+            },
+            "filters": [
+                {
+                    "name": "Date",
+                    "type": "date_range"
+                },
+                {
+                    "name": "Region",
+                    "type": "dropdown"
+                },
+                {
+                    "name": "Category",
+                    "type": "dropdown"
+                }
+            ],
+            "widgets": [
+                {
+                    "id": "kpi_total",
+                    "type": "kpi",
+                    "width": 3,
+                    "height": 1,
+                    "title": "Total Sales",
+                    "value": 12642905
+                },
+                {
+                    "id": "kpi_average",
+                    "type": "kpi",
+                    "title": "Average Sales",
+                    "value": 972531.15
+                },
+                {
+                    "id": "kpi_highest",
+                    "type": "kpi",
+                    "title": "Highest Sales",
+                    "value": 2822399
+                },
+                {
+                    "id": "kpi_lowest",
+                    "type": "kpi",
+                    "title": "Lowest Sales",
+                    "value": 66932
+                },
+                {
+                    "id": "chart_1",
+                    "type": "chart",
+                    "width": 12,
+                    "height": 6,
+                    "title": "Sales by Region",
+                    "description": "Generated automatically",
+                    "created_by": "MetricMind X",
+                    "config": {
+                        "chart_type": "horizontal_bar",
+                        "title": "Sales by Region",
+                        "x_axis": "Sales",
+                        "y_axis": "Region",
+                        "labels": [
+                            "Central",
+                            "South",
+                            "North",
+                            "Oceania",
+                            "Southeast Asia",
+                            "North Asia",
+                            "EMEA",
+                            "Africa",
+                            "Central Asia",
+                            "West",
+                            "East",
+                            "Caribbean",
+                            "Canada"
+                        ],
+                        "values": [
+                            2822399.0,
+                            1600960.0,
+                            1248192.0,
+                            1100207.0,
+                            884438.0,
+                            848349.0,
+                            806184.0,
+                            783776.0,
+                            752839.0,
+                            725514.0,
+                            678834.0,
+                            324281.0,
+                            66932.0
+                        ],
+                        "color": "#4F46E5",
+                        "sort": "descending",
+                        "format": "currency",
+                        "insight": ""
+                    }
+                }
+            ],
+            "interactions": {
+                "cross_filter": true,
+                "drill_down": true,
+                "sorting": true,
+                "pagination": true,
+                "search": true,
+                "refresh": true
+            },
+            "export": {
+                "csv": true,
+                "excel": true,
+                "pdf": true,
+                "json": true
+            },
+            "analysis": {
+                "dataset": "Global Superstore.csv",
+                "metric": "sales",
+                "group_by": "Region",
+                "records": [
+                    {
+                        "Region": "Central",
+                        "Sales": 2822399
+                    },
+                    {
+                        "Region": "South",
+                        "Sales": 1600960
+                    },
+                    {
+                        "Region": "North",
+                        "Sales": 1248192
+                    },
+                    {
+                        "Region": "Oceania",
+                        "Sales": 1100207
+                    },
+                    {
+                        "Region": "Southeast Asia",
+                        "Sales": 884438
+                    },
+                    {
+                        "Region": "North Asia",
+                        "Sales": 848349
+                    },
+                    {
+                        "Region": "EMEA",
+                        "Sales": 806184
+                    },
+                    {
+                        "Region": "Africa",
+                        "Sales": 783776
+                    },
+                    {
+                        "Region": "Central Asia",
+                        "Sales": 752839
+                    },
+                    {
+                        "Region": "West",
+                        "Sales": 725514
+                    },
+                    {
+                        "Region": "East",
+                        "Sales": 678834
+                    },
+                    {
+                        "Region": "Caribbean",
+                        "Sales": 324281
+                    },
+                    {
+                        "Region": "Canada",
+                        "Sales": 66932
+                    }
+                ]
+            },
+            "metadata": {
+                "generated_by": "MetricMind X",
+                "version": "1.0",
+                "generated_at": "2026-08-08T01:08:49.632655",
+                "dashboard_type": "business_dashboard"
+            }
+        }
+    },
+    {
+        "id": "618cc50c-2008-4f3d-b3b5-48c399d6e575",
+        "name": "string",
+        "created_at": "2026-08-08T01:11:57.838657",
+        "dashboard": {
+            "additionalProp1": {}
         }
     }
 ]
