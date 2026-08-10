@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 
 from app.api.tags import tags_metadata
 
@@ -14,6 +16,7 @@ from app.api.agent import router as agent_router
 from app.api.langgraph_agent import router as langgraph_router
 from app.api.memory import router as memory_router
 from app.api.dashboard import router as dashboard_router
+from app.api.dashboard_filter import router as dashboard_filter_router
 from app.api.system import router as system_router
 from app.api.health import router as health_router
 from app.api.stats import router as stats_router
@@ -60,6 +63,16 @@ Planner
     },
     openapi_tags=tags_metadata
 )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Dataset Pipeline
@@ -80,7 +93,9 @@ app.include_router(langgraph_router)
 app.include_router(memory_router)
 
 # Dashboard
+
 app.include_router(dashboard_router)
+app.include_router(dashboard_filter_router)
 
 # Monitoring
 app.include_router(system_router)
