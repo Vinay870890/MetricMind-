@@ -1,35 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 const API_URL = "http://127.0.0.1:8000";
 
-type RecordData = {
-  [key: string]: string | number;
-};
-
-type DashboardWidget = {
-  id: string;
-  type: string;
-  width?: number;
-  height?: number;
-  title?: string;
-  value?: number;
-  description?: string;
-  created_by?: string;
-  config?: {
-    chart_type?: string;
-    title?: string;
-    x_axis?: string;
-    y_axis?: string;
-    labels?: string[];
-    values?: number[];
-    color?: string;
-    sort?: string;
-    format?: string;
-    insight?: string;
-  };
-};
+type RecordItem = Record<string, unknown>;
 
 type DashboardData = {
   dashboard_id?: string;
@@ -37,41 +13,11 @@ type DashboardData = {
   description?: string;
   theme?: string;
 
-  layout?: {
-    type?: string;
-    columns?: number;
-    responsive?: boolean;
-    gap?: number;
-  };
-
-  filters?: {
-    name?: string;
-    type?: string;
-  }[];
-
-  widgets?: DashboardWidget[];
-
-  interactions?: {
-    cross_filter?: boolean;
-    drill_down?: boolean;
-    sorting?: boolean;
-    pagination?: boolean;
-    search?: boolean;
-    refresh?: boolean;
-  };
-
-  export?: {
-    csv?: boolean;
-    excel?: boolean;
-    pdf?: boolean;
-    json?: boolean;
-  };
-
   analysis?: {
     dataset?: string;
     metric?: string;
     group_by?: string;
-    records?: RecordData[];
+    records?: RecordItem[];
   };
 
   metadata?: {
@@ -82,22 +28,18 @@ type DashboardData = {
   };
 };
 
-type ApiResponse = {
+type DashboardResponse = {
   status?: string;
-
-  dashboard?: {
-    id?: string;
-    name?: string;
-    dashboard?: DashboardData;
-  };
+  message?: string;
+  dashboard?: DashboardData;
 };
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams();
+  const dashboardId = searchParams.get("id");
+
   const [dashboard, setDashboard] =
     useState<DashboardData | null>(null);
-
-  const [dashboardId, setDashboardId] =
-    useState("");
 
   const [loading, setLoading] =
     useState(true);
@@ -105,201 +47,226 @@ export default function DashboardPage() {
   const [error, setError] =
     useState("");
 
-  const [regionFilter, setRegionFilter] =
-    useState("all");
+  async function loadDashboard() {
+    if (!dashboardId) {
+      setError("Dashboard ID is missing.");
+      setLoading(false);
+      return;
+    }
 
-  const [categoryFilter, setCategoryFilter] =
-    useState("all");
+    try {
+      setLoading(true);
+      setError("");
 
-  const [search, setSearch] =
-    useState("");
+      const response = await fetch(
+        `${API_URL}/api/dashboard/${encodeURIComponent(
+          dashboardId
+        )}`,
+        {
+          cache: "no-store",
+        }
+      );
 
-  const [sortOrder, setSortOrder] =
-    useState<"desc" | "asc">("desc");
+      if (!response.ok) {
+        throw new Error(
+          `Backend returned ${response.status}`
+        );
+      }
+
+      const data: DashboardResponse =
+        await response.json();
+
+      if (
+        data.status === "error" ||
+        !data.dashboard
+      ) {
+        throw new Error(
+          data.message || "Dashboard not found."
+        );
+      }
+
+      setDashboard(data.dashboard);
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        "Unable to load dashboard. Make sure FastAPI is running on port 8000."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function loadDashboard() {
-      try {
-        const params = new URLSearchParams(
-          window.location.search
-        );
-
-        const id = params.get("id");
-
-        if (!id) {
-          throw new Error(
-            "Dashboard ID is missing from the URL."
-          );
-        }
-
-        setDashboardId(id);
-
-        const response = await fetch(
-          `${API_URL}/api/dashboard/${id}`
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `Backend returned ${response.status}`
-          );
-        }
-
-        const data: ApiResponse =
-          await response.json();
-
-        const actualDashboard =
-          data.dashboard?.dashboard;
-
-        if (!actualDashboard) {
-          throw new Error(
-            "Dashboard data was not found."
-          );
-        }
-
-        setDashboard(actualDashboard);
-      } catch (err) {
-        console.error(err);
-
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError(
-            "Unable to load dashboard."
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadDashboard();
-  }, []);
+  }, [dashboardId]);
 
-  const records =
-    dashboard?.analysis?.records || [];
+  function goBack() {
+    window.location.href = "/dashboards";
+  }
 
-  const groupBy =
-    dashboard?.analysis?.group_by || "";
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white">
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
 
-  const metric =
-    dashboard?.analysis?.metric || "";
+            <div className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-2 border-slate-700 border-t-blue-500" />
 
-  const regionValues = useMemo(() => {
-    const values = records
-      .map((record) =>
-        String(record["Region"] || "")
-      )
-      .filter(Boolean);
+            <p className="text-slate-300">
+              Loading dashboard...
+            </p>
 
-    return Array.from(new Set(values)).sort();
-  }, [records]);
+          </div>
+        </div>
+      </main>
+    );
+  }
 
-  const categoryValues = useMemo(() => {
-    const values = records
-      .map((record) =>
-        String(record["Category"] || "")
-      )
-      .filter(Boolean);
+  if (error || !dashboard) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white">
 
-    return Array.from(new Set(values)).sort();
-  }, [records]);
+        <header className="border-b border-slate-800">
+          <div className="mx-auto max-w-7xl px-6 py-5">
 
-  const filteredRecords = useMemo(() => {
-    let filtered = [...records];
+            <h1 className="text-2xl font-bold">
+              MetricMind X
+            </h1>
 
-    if (regionFilter !== "all") {
-      filtered = filtered.filter(
-        (record) =>
-          String(record["Region"] || "") ===
-          regionFilter
-      );
-    }
+            <p className="text-sm text-slate-400">
+              AI-Powered Semantic Business Intelligence
+            </p>
 
-    if (categoryFilter !== "all") {
-      filtered = filtered.filter(
-        (record) =>
-          String(record["Category"] || "") ===
-          categoryFilter
-      );
-    }
+          </div>
+        </header>
 
-    if (search.trim()) {
-      const searchText =
-        search.toLowerCase();
+        <section className="mx-auto max-w-4xl px-6 py-20">
 
-      filtered = filtered.filter((record) =>
-        Object.values(record).some((value) =>
-          String(value)
-            .toLowerCase()
-            .includes(searchText)
-        )
-      );
-    }
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-10 text-center">
 
-    return filtered;
-  }, [
-    records,
-    regionFilter,
-    categoryFilter,
-    search,
-  ]);
+            <div className="text-4xl">
+              ⚠️
+            </div>
 
-  const chartData = useMemo(() => {
-    if (!groupBy || !metric) {
-      return [];
-    }
+            <h2 className="mt-4 text-2xl font-bold">
+              Dashboard Loading Failed
+            </h2>
 
-    const grouped: Record<
-      string,
-      number
-    > = {};
+            <p className="mt-3 text-red-300">
+              {error || "Dashboard not found."}
+            </p>
 
-    filteredRecords.forEach((record) => {
-      const group =
-        String(record[groupBy] || "");
+            <button
+              onClick={goBack}
+              className="mt-7 rounded-xl bg-blue-600 px-6 py-3 font-medium transition hover:bg-blue-500"
+            >
+              ← Back to Dashboards
+            </button>
 
-      const value =
-        Number(record[metric]) || 0;
+          </div>
 
-      if (!group) {
-        return;
+        </section>
+
+      </main>
+    );
+  }
+
+  const analysis = dashboard.analysis;
+  const metadata = dashboard.metadata;
+  const records = analysis?.records || [];
+
+  const metric = analysis?.metric || "Metric";
+  const groupBy = analysis?.group_by || "Category";
+
+  /*
+   * Convert record values into numbers where possible.
+   */
+  function getNumericValue(
+    record: RecordItem
+  ): number {
+    const possibleKeys = [
+      metric,
+      metric.toLowerCase(),
+      "value",
+      "total",
+      "sales",
+      "profit",
+      "quantity",
+      "discount",
+    ];
+
+    for (const key of possibleKeys) {
+      const value = record[key];
+
+      if (
+        typeof value === "number" &&
+        Number.isFinite(value)
+      ) {
+        return value;
       }
 
-      grouped[group] =
-        (grouped[group] || 0) + value;
-    });
+      if (typeof value === "string") {
+        const numeric = Number(
+          value.replace(/,/g, "")
+        );
 
-    return Object.entries(grouped)
-      .map(([label, value]) => ({
-        label,
-        value,
-      }))
-      .sort((a, b) =>
-        sortOrder === "desc"
-          ? b.value - a.value
-          : a.value - b.value
-      );
-  }, [
-    filteredRecords,
-    groupBy,
-    metric,
-    sortOrder,
-  ]);
+        if (Number.isFinite(numeric)) {
+          return numeric;
+        }
+      }
+    }
 
-  const totalValue = useMemo(() => {
-    return chartData.reduce(
-      (sum, item) =>
-        sum + item.value,
-      0
-    );
-  }, [chartData]);
+    return 0;
+  }
 
-  const averageValue =
+  function getGroupValue(
+    record: RecordItem
+  ): string {
+    const possibleKeys = [
+      groupBy,
+      groupBy.toLowerCase(),
+      "group",
+      "name",
+      "category",
+      "Customer Name",
+      "Product Name",
+      "Region",
+      "Country",
+    ];
+
+    for (const key of possibleKeys) {
+      const value = record[key];
+
+      if (
+        typeof value === "string" ||
+        typeof value === "number"
+      ) {
+        return String(value);
+      }
+    }
+
+    return "Unknown";
+  }
+
+  const chartData = records.map(
+    (record) => ({
+      label: getGroupValue(record),
+      value: getNumericValue(record),
+    })
+  );
+
+  const total = chartData.reduce(
+    (sum, item) => sum + item.value,
+    0
+  );
+
+  const average =
     chartData.length > 0
-      ? totalValue / chartData.length
+      ? total / chartData.length
       : 0;
 
-  const highestValue =
+  const highest =
     chartData.length > 0
       ? Math.max(
           ...chartData.map(
@@ -308,7 +275,7 @@ export default function DashboardPage() {
         )
       : 0;
 
-  const lowestValue =
+  const lowest =
     chartData.length > 0
       ? Math.min(
           ...chartData.map(
@@ -317,75 +284,23 @@ export default function DashboardPage() {
         )
       : 0;
 
-  function resetFilters() {
-    setRegionFilter("all");
-    setCategoryFilter("all");
-    setSearch("");
-    setSortOrder("desc");
-  }
-
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-blue-500" />
-
-          <p className="text-slate-300">
-            Loading MetricMind Dashboard...
-          </p>
-        </div>
-      </main>
+  const highestItem =
+    chartData.find(
+      (item) => item.value === highest
     );
-  }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-white">
-
-        <div className="w-full max-w-xl rounded-2xl border border-red-500/30 bg-slate-900 p-8 text-center">
-
-          <h1 className="text-2xl font-bold text-red-400">
-            Dashboard Loading Failed
-          </h1>
-
-          <p className="mt-4 text-slate-300">
-            {error}
-          </p>
-
-          <div className="mt-6 rounded-xl bg-slate-950 p-4 text-left">
-
-            <p className="text-xs text-slate-500">
-              Dashboard ID
-            </p>
-
-            <p className="mt-1 break-all font-mono text-sm text-blue-400">
-              {dashboardId ||
-                "Not provided"}
-            </p>
-
-          </div>
-
-          <button
-            onClick={() =>
-              window.location.reload()
-            }
-            className="mt-6 rounded-xl bg-blue-600 px-5 py-3 font-medium hover:bg-blue-500"
-          >
-            Retry
-          </button>
-
-        </div>
-
-      </main>
+  const lowestItem =
+    chartData.find(
+      (item) => item.value === lowest
     );
-  }
 
-  if (!dashboard) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        No dashboard data available.
-      </main>
-    );
+  function formatNumber(value: number) {
+    return new Intl.NumberFormat(
+      "en-US",
+      {
+        maximumFractionDigits: 2,
+      }
+    ).format(value);
   }
 
   return (
@@ -412,11 +327,11 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
 
             <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-400">
-              Dashboard Live
+              Saved Dashboard
             </span>
 
             <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs text-blue-400">
-              v1.0.0
+              v{metadata?.version || "1.0"}
             </span>
 
           </div>
@@ -429,24 +344,31 @@ export default function DashboardPage() {
 
       <section className="mx-auto max-w-7xl px-6 py-10">
 
-        {/* DASHBOARD HEADER */}
+        {/* TOP BAR */}
 
         <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
 
           <div>
 
+            <button
+              onClick={goBack}
+              className="mb-5 text-sm text-blue-400 transition hover:text-blue-300"
+            >
+              ← Back to Dashboard Library
+            </button>
+
             <p className="text-sm text-blue-400">
-              AI Generated Dashboard
+              Business Intelligence Dashboard
             </p>
 
-            <h2 className="mt-1 text-4xl font-bold">
+            <h2 className="mt-2 text-4xl font-bold">
               {dashboard.title ||
                 "MetricMind Dashboard"}
             </h2>
 
             <p className="mt-3 max-w-3xl text-slate-400">
               {dashboard.description ||
-                "Business intelligence dashboard generated by MetricMind X."}
+                "AI-generated business intelligence dashboard."}
             </p>
 
           </div>
@@ -465,520 +387,420 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* FILTER PANEL */}
-
-        <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-
-          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-
-            <div>
-
-              <h3 className="text-xl font-semibold">
-                Dashboard Filters
-              </h3>
-
-              <p className="mt-1 text-sm text-slate-400">
-                Filter and explore the generated analysis.
-              </p>
-
-            </div>
-
-            <button
-              onClick={resetFilters}
-              className="rounded-lg bg-slate-800 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700"
-            >
-              Reset Filters
-            </button>
-
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-
-            {/* REGION */}
-
-            {regionValues.length > 0 && (
-
-              <div>
-
-                <label className="mb-2 block text-xs text-slate-500">
-                  Region
-                </label>
-
-                <select
-                  value={regionFilter}
-                  onChange={(event) =>
-                    setRegionFilter(
-                      event.target.value
-                    )
-                  }
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
-                >
-
-                  <option value="all">
-                    All Regions
-                  </option>
-
-                  {regionValues.map(
-                    (region) => (
-                      <option
-                        key={region}
-                        value={region}
-                      >
-                        {region}
-                      </option>
-                    )
-                  )}
-
-                </select>
-
-              </div>
-
-            )}
-
-            {/* CATEGORY */}
-
-            {categoryValues.length > 0 && (
-
-              <div>
-
-                <label className="mb-2 block text-xs text-slate-500">
-                  Category
-                </label>
-
-                <select
-                  value={categoryFilter}
-                  onChange={(event) =>
-                    setCategoryFilter(
-                      event.target.value
-                    )
-                  }
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
-                >
-
-                  <option value="all">
-                    All Categories
-                  </option>
-
-                  {categoryValues.map(
-                    (category) => (
-                      <option
-                        key={category}
-                        value={category}
-                      >
-                        {category}
-                      </option>
-                    )
-                  )}
-
-                </select>
-
-              </div>
-
-            )}
-
-            {/* SEARCH */}
-
-            <div>
-
-              <label className="mb-2 block text-xs text-slate-500">
-                Search
-              </label>
-
-              <input
-                type="text"
-                value={search}
-                onChange={(event) =>
-                  setSearch(
-                    event.target.value
-                  )
-                }
-                placeholder="Search data..."
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
-              />
-
-            </div>
-
-            {/* SORT */}
-
-            <div>
-
-              <label className="mb-2 block text-xs text-slate-500">
-                Sort
-              </label>
-
-              <select
-                value={sortOrder}
-                onChange={(event) =>
-                  setSortOrder(
-                    event.target.value as
-                      | "desc"
-                      | "asc"
-                  )
-                }
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
-              >
-
-                <option value="desc">
-                  Highest → Lowest
-                </option>
-
-                <option value="asc">
-                  Lowest → Highest
-                </option>
-
-              </select>
-
-            </div>
-
-          </div>
-
-        </div>
-
         {/* KPI CARDS */}
 
-        <div className="mb-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
 
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-500">
               Total {metric}
             </p>
 
-            <p className="mt-3 text-3xl font-bold">
-              {totalValue.toLocaleString(
-                undefined,
-                {
-                  maximumFractionDigits: 2,
-                }
-              )}
-            </p>
-
-            <p className="mt-2 text-xs text-blue-400">
-              Filtered result
+            <p className="mt-3 text-3xl font-bold text-blue-400">
+              {formatNumber(total)}
             </p>
 
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
 
-            <p className="text-sm text-slate-400">
-              Average {metric}
+            <p className="text-sm text-slate-500">
+              Average
             </p>
 
-            <p className="mt-3 text-3xl font-bold">
-              {averageValue.toLocaleString(
-                undefined,
-                {
-                  maximumFractionDigits: 2,
-                }
-              )}
-            </p>
-
-            <p className="mt-2 text-xs text-blue-400">
-              Calculated dynamically
+            <p className="mt-3 text-3xl font-bold text-emerald-400">
+              {formatNumber(average)}
             </p>
 
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
 
-            <p className="text-sm text-slate-400">
-              Highest {metric}
+            <p className="text-sm text-slate-500">
+              Highest
             </p>
 
-            <p className="mt-3 text-3xl font-bold">
-              {highestValue.toLocaleString(
-                undefined,
-                {
-                  maximumFractionDigits: 2,
-                }
-              )}
+            <p className="mt-3 text-3xl font-bold text-purple-400">
+              {formatNumber(highest)}
             </p>
 
-            <p className="mt-2 text-xs text-emerald-400">
-              Highest filtered value
-            </p>
+            {highestItem && (
+              <p className="mt-2 truncate text-xs text-slate-400">
+                {highestItem.label}
+              </p>
+            )}
 
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
 
-            <p className="text-sm text-slate-400">
-              Lowest {metric}
+            <p className="text-sm text-slate-500">
+              Lowest
             </p>
 
-            <p className="mt-3 text-3xl font-bold">
-              {lowestValue.toLocaleString(
-                undefined,
-                {
-                  maximumFractionDigits: 2,
-                }
-              )}
+            <p className="mt-3 text-3xl font-bold text-orange-400">
+              {formatNumber(lowest)}
             </p>
 
-            <p className="mt-2 text-xs text-red-400">
-              Lowest filtered value
-            </p>
+            {lowestItem && (
+              <p className="mt-2 truncate text-xs text-slate-400">
+                {lowestItem.label}
+              </p>
+            )}
 
           </div>
 
         </div>
 
-        {/* CHART */}
+        {/* ANALYSIS SUMMARY */}
 
-        <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
 
-          <div className="mb-7 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 lg:col-span-2">
 
-            <div>
+            <div className="flex items-center justify-between">
 
-              <h3 className="text-2xl font-semibold">
-                {groupBy
-                  ? `${metric} by ${groupBy}`
-                  : "Business Analysis"}
-              </h3>
+              <div>
 
-              <p className="mt-1 text-sm text-slate-400">
-                {filteredRecords.length} filtered record groups
-              </p>
+                <p className="text-xs font-medium uppercase tracking-wider text-blue-400">
+                  Analysis
+                </p>
+
+                <h3 className="mt-1 text-xl font-semibold">
+                  {metric} by {groupBy}
+                </h3>
+
+              </div>
+
+              <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs text-blue-400">
+                {records.length} Records
+              </span>
 
             </div>
 
-            <span className="rounded-lg bg-slate-800 px-3 py-2 text-xs text-slate-300">
-              Interactive Chart
+            <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
+
+              <div className="grid grid-cols-3 border-b border-slate-800 bg-slate-950 px-4 py-3 text-xs font-medium text-slate-500">
+
+                <span>
+                  {groupBy}
+                </span>
+
+                <span className="text-right">
+                  {metric}
+                </span>
+
+                <span className="text-right">
+                  Share
+                </span>
+
+              </div>
+
+              <div className="max-h-[500px] overflow-y-auto">
+
+                {chartData.length === 0 ? (
+
+                  <div className="p-10 text-center text-sm text-slate-500">
+                    No analysis records available.
+                  </div>
+
+                ) : (
+
+                  chartData.map(
+                    (item, index) => {
+
+                      const share =
+                        total !== 0
+                          ? (
+                              (item.value /
+                                total) *
+                              100
+                            )
+                          : 0;
+
+                      return (
+                        <div
+                          key={`${item.label}-${index}`}
+                          className="grid grid-cols-3 border-b border-slate-800 px-4 py-4 text-sm last:border-0 hover:bg-slate-800/40"
+                        >
+
+                          <span className="truncate pr-4 text-slate-300">
+                            {item.label}
+                          </span>
+
+                          <span className="text-right font-medium text-white">
+                            {formatNumber(
+                              item.value
+                            )}
+                          </span>
+
+                          <span className="text-right text-slate-400">
+                            {share.toFixed(1)}%
+                          </span>
+
+                        </div>
+                      );
+                    }
+                  )
+
+                )}
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* INSIGHTS */}
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+
+            <p className="text-xs font-medium uppercase tracking-wider text-emerald-400">
+              AI Insight
+            </p>
+
+            <h3 className="mt-1 text-xl font-semibold">
+              Business Summary
+            </h3>
+
+            <div className="mt-6 space-y-5">
+
+              <div className="rounded-xl bg-slate-950 p-4">
+
+                <p className="text-xs text-slate-500">
+                  Top Performer
+                </p>
+
+                <p className="mt-2 font-semibold text-white">
+                  {highestItem?.label ||
+                    "-"}
+                </p>
+
+                <p className="mt-1 text-sm text-emerald-400">
+                  {formatNumber(highest)}
+                </p>
+
+              </div>
+
+              <div className="rounded-xl bg-slate-950 p-4">
+
+                <p className="text-xs text-slate-500">
+                  Lowest Performer
+                </p>
+
+                <p className="mt-2 font-semibold text-white">
+                  {lowestItem?.label ||
+                    "-"}
+                </p>
+
+                <p className="mt-1 text-sm text-orange-400">
+                  {formatNumber(lowest)}
+                </p>
+
+              </div>
+
+              <div className="rounded-xl bg-slate-950 p-4">
+
+                <p className="text-xs text-slate-500">
+                  Dataset
+                </p>
+
+                <p className="mt-2 break-words font-medium text-white">
+                  {analysis?.dataset ||
+                    "-"}
+                </p>
+
+              </div>
+
+              <div className="rounded-xl bg-slate-950 p-4">
+
+                <p className="text-xs text-slate-500">
+                  Generated By
+                </p>
+
+                <p className="mt-2 font-medium text-blue-400">
+                  {metadata?.generated_by ||
+                    "MetricMind X"}
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* VISUAL BAR CHART */}
+
+        <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+
+            <div>
+
+              <p className="text-xs font-medium uppercase tracking-wider text-purple-400">
+                Visualization
+              </p>
+
+              <h3 className="mt-1 text-xl font-semibold">
+                {metric} Distribution
+              </h3>
+
+            </div>
+
+            <span className="text-xs text-slate-500">
+              {groupBy}
             </span>
 
           </div>
 
-          {chartData.length === 0 ? (
+          <div className="mt-8 space-y-5">
 
-            <div className="rounded-xl border border-dashed border-slate-800 p-10 text-center">
+            {chartData.length === 0 ? (
 
-              <p className="text-slate-400">
-                No data matches the selected filters.
-              </p>
+              <div className="py-10 text-center text-slate-500">
+                No visualization data available.
+              </div>
 
-              <button
-                onClick={resetFilters}
-                className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm hover:bg-blue-500"
-              >
-                Reset Filters
-              </button>
+            ) : (
 
-            </div>
-
-          ) : (
-
-            <div className="space-y-5">
-
-              {chartData.map(
-                (item) => {
-
-                  const maxValue =
-                    Math.max(
-                      ...chartData.map(
-                        (entry) =>
-                          entry.value
-                      ),
-                      1
-                    );
+              chartData.map(
+                (item, index) => {
 
                   const percentage =
-                    (item.value /
-                      maxValue) *
-                    100;
+                    highest > 0
+                      ? (item.value /
+                          highest) *
+                        100
+                      : 0;
 
                   return (
-
                     <div
-                      key={item.label}
+                      key={`bar-${item.label}-${index}`}
                     >
 
-                      <div className="mb-2 flex justify-between">
+                      <div className="mb-2 flex items-center justify-between gap-4 text-sm">
 
-                        <span className="text-sm font-medium text-slate-300">
+                        <span className="max-w-[60%] truncate text-slate-300">
                           {item.label}
                         </span>
 
-                        <span className="text-sm text-slate-400">
-                          {item.value.toLocaleString(
-                            undefined,
-                            {
-                              maximumFractionDigits: 2,
-                            }
+                        <span className="font-medium text-white">
+                          {formatNumber(
+                            item.value
                           )}
                         </span>
 
                       </div>
 
-                      <div className="h-4 overflow-hidden rounded-full bg-slate-800">
+                      <div className="h-3 overflow-hidden rounded-full bg-slate-800">
 
                         <div
-                          className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                          className="h-full rounded-full bg-blue-500 transition-all duration-700"
                           style={{
-                            width: `${percentage}%`,
+                            width: `${Math.max(
+                              percentage,
+                              item.value > 0
+                                ? 1
+                                : 0
+                            )}%`,
                           }}
                         />
 
                       </div>
 
                     </div>
-
                   );
                 }
-              )}
+              )
 
-            </div>
+            )}
 
-          )}
+          </div>
 
         </div>
 
-        {/* ANALYSIS METADATA */}
+        {/* METADATA */}
 
-        {dashboard.analysis && (
+        <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
 
-          <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+            Dashboard Metadata
+          </p>
 
-            <h3 className="text-xl font-semibold">
-              Analysis Metadata
-            </h3>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <div className="rounded-xl bg-slate-950 p-4">
 
-              <div className="rounded-xl bg-slate-950 p-5">
+              <p className="text-xs text-slate-500">
+                Dashboard Type
+              </p>
 
-                <p className="text-xs text-slate-500">
-                  Dataset
-                </p>
-
-                <p className="mt-2 font-medium">
-                  {dashboard.analysis.dataset ||
-                    "-"}
-                </p>
-
-              </div>
-
-              <div className="rounded-xl bg-slate-950 p-5">
-
-                <p className="text-xs text-slate-500">
-                  Metric
-                </p>
-
-                <p className="mt-2 font-medium">
-                  {dashboard.analysis.metric ||
-                    "-"}
-                </p>
-
-              </div>
-
-              <div className="rounded-xl bg-slate-950 p-5">
-
-                <p className="text-xs text-slate-500">
-                  Group By
-                </p>
-
-                <p className="mt-2 font-medium">
-                  {dashboard.analysis.group_by ||
-                    "-"}
-                </p>
-
-              </div>
+              <p className="mt-2 text-sm font-medium">
+                {metadata?.dashboard_type ||
+                  "Business Intelligence"}
+              </p>
 
             </div>
 
-            <p className="mt-5 text-sm text-slate-500">
-              Records available:{" "}
-              {records.length}
-              {" · "}
-              Records after filters:{" "}
-              {filteredRecords.length}
-            </p>
+            <div className="rounded-xl bg-slate-950 p-4">
 
-          </div>
+              <p className="text-xs text-slate-500">
+                Version
+              </p>
 
-        )}
+              <p className="mt-2 text-sm font-medium">
+                {metadata?.version ||
+                  "1.0"}
+              </p>
 
-        {/* CAPABILITIES */}
+            </div>
 
-        {dashboard.interactions && (
+            <div className="rounded-xl bg-slate-950 p-4">
 
-          <div className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <p className="text-xs text-slate-500">
+                Generated By
+              </p>
 
-            <h3 className="text-xl font-semibold">
-              Dashboard Capabilities
-            </h3>
+              <p className="mt-2 text-sm font-medium">
+                {metadata?.generated_by ||
+                  "MetricMind X"}
+              </p>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            </div>
 
-              {dashboard.interactions.cross_filter && (
-                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+            <div className="rounded-xl bg-slate-950 p-4">
 
-                  <p className="font-semibold text-blue-400">
-                    Cross Filtering
-                  </p>
+              <p className="text-xs text-slate-500">
+                Created
+              </p>
 
-                  <p className="mt-2 text-sm text-slate-400">
-                    Interactive dashboard filtering support.
-                  </p>
+              <p className="mt-2 text-sm font-medium">
 
-                </div>
-              )}
+                {metadata?.generated_at
+                  ? new Date(
+                      metadata.generated_at
+                    ).toLocaleString()
+                  : "-"}
 
-              {dashboard.interactions.drill_down && (
-                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-
-                  <p className="font-semibold text-blue-400">
-                    Drill Down
-                  </p>
-
-                  <p className="mt-2 text-sm text-slate-400">
-                    Explore business data at deeper levels.
-                  </p>
-
-                </div>
-              )}
-
-              {dashboard.interactions.sorting && (
-                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-
-                  <p className="font-semibold text-blue-400">
-                    Sorting
-                  </p>
-
-                  <p className="mt-2 text-sm text-slate-400">
-                    Sort dashboard data dynamically.
-                  </p>
-
-                </div>
-              )}
-
-              {dashboard.interactions.search && (
-                <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-
-                  <p className="font-semibold text-blue-400">
-                    Search
-                  </p>
-
-                  <p className="mt-2 text-sm text-slate-400">
-                    Search through dashboard data.
-                  </p>
-
-                </div>
-              )}
+              </p>
 
             </div>
 
           </div>
 
-        )}
+        </div>
 
       </section>
 
       {/* FOOTER */}
 
       <footer className="border-t border-slate-800 py-6 text-center text-sm text-slate-500">
+
         MetricMind X · AI-Powered Semantic Business Intelligence Platform
+
       </footer>
 
     </main>
